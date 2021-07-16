@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Repositories\DashboardRepository;
 use App\Helpers\ErrorMessage;
+use App\Http\Requests\ScraperSettingsRequest;
 
 class DashboardController extends Controller
 {
@@ -21,7 +22,8 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        return view('dashboard.index');
+        $scraperSettings = $this->dashboardService->getScraperSettings();
+        return view('dashboard.index')->with(compact('scraperSettings'));
     }
 
     /**
@@ -74,14 +76,15 @@ class DashboardController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(ScraperSettingsRequest $request, $id = null)
     {
         try {
-            $this->dashboardService->updateScrapperSettings($request, $id);
+            $this->dashboardService->updateScraperSettings($request, $id);
 
-            return redirect()->route('dashboard')->with('success', self::SUCCESS);
+            return redirect()->route('dashboard.index')->with('success', 'Successfully updated');
         } catch (\Throwable $ex) {
-            return redirect()->back()->with('error', ErrorMessage::UNKNOWN_ERROR);
+            dd($ex->getMessage());
+            return redirect()->route('dashboard.index')->with('error', ErrorMessage::UNKNOWN_ERROR);
         }
     }
 
