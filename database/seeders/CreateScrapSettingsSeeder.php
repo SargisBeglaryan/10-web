@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Carbon\Carbon;
 use App\Models\ScraperSettings;
 
-class CreateScrapSettings extends Seeder
+class CreateScrapSettingsSeeder extends Seeder
 {
     /**
      * Run the database seeds.
