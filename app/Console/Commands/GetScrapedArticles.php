@@ -6,13 +6,16 @@ use Illuminate\Console\Command;
 use GuzzleHttp\Client;
 use App\Models\ScraperSettings;
 use App\Models\Article;
+use App\Models\MostUsedWord;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class GetScrapedArticles extends Command
 {
 
     protected $scraperSettings;
+    protected $mostUsedWords = [];
     protected $pagesCount = 0;
     protected $addedPostsCount = 0;
     protected $websiteUrl = 'https://10web.io/blog/';
@@ -48,6 +51,7 @@ class GetScrapedArticles extends Command
     public function handle()
     {
         try {
+            DB::beginTransaction();
             $this->scraperSettings = ScraperSettings::orderByDesc('id')->first();
             $addedArticlesCount = 0;
 
@@ -63,14 +67,30 @@ class GetScrapedArticles extends Command
             $this->addPageBlogPosts($DOM);
 
             $this->addAllPagesArticles();
-            
+
+            $this->addDayMostUsedWord();
+
+            DB::commit();
             echo 'Success';
         } catch (\Exception $ex) {
+            DB::rollBack();
             echo $ex->getMessage();
         }
     }
 
-    public function addAllPagesArticles() {
+    protected function addDayMostUsedWord() {
+        if (!empty($this->mostUsedWords)) {
+            $keyName = array_key_first($this->mostUsedWords);
+            $mostUsedWord = new MostUsedWord();
+            $mostUsedWord->name = $keyName;
+            $mostUsedWord->count = $this->mostUsedWords[$keyName];
+            $mostUsedWord->date = Carbon::now();
+            $mostUsedWord->save();
+        }
+
+    }
+
+    protected function addAllPagesArticles() {
 
         for ($i = 2; $i <= $this->pagesCount; $i++) {
             if ($this->scraperSettings->limit < $this->addedPostsCount) {
@@ -113,7 +133,6 @@ class GetScrapedArticles extends Command
 
     protected function checkAndAddBlogPost($pagePosts) {
         $postLink = $pagePosts->getElementsByTagName('a')->item(0)->getAttribute('href');
-        var_dump($postLink);
         $client = new Client();
         $request = $client->get($postLink);
         $response = $request->getBody();
@@ -130,13 +149,13 @@ class GetScrapedArticles extends Command
 
         if (!in_array($title, $allArticlesTitles)) {
             $articleDate = $this->checkAndGetArticleDate($DOM);
+
             if ($articleDate) {
                 $newArticle = new Article();
                 $newArticle->title = $title;
                 $newArticle->author = $this->getNewArticleAuthor($DOM);
                 $newArticle->original_content = $this->getNewArticleOriginalContent($DOM);
-                //$newArticle->content_text = $this->getNewArticleContentText($DOM);
-                $newArticle->content_text = null;
+                $newArticle->content_text = $this->getNewArticleContentText($DOM);
                 $newArticle->article_date = $articleDate;
                 $newArticle->scraped_date = Carbon::now();
                 $newArticle->excerpt = $this->getNewArticleCategory($DOM);
@@ -144,6 +163,7 @@ class GetScrapedArticles extends Command
                 $newArticle->created_at = Carbon::now();
                 $newArticle->updated_at = Carbon::now();
                 $newArticle->save();
+
                 $this->addedPostsCount = $this->addedPostsCount + 1;
             }
         }
@@ -170,19 +190,45 @@ class GetScrapedArticles extends Command
             return null;
         }
 
-        return $articleContent->item(0)->nodeValue ?? null;
+        return $articleContent->item(0)->nodeValue;
+    }
+
+    protected function getNewArticleContentText($dom): ?string {
+        $finder = new \DomXPath($dom);
+        $classname="entry-content";
+        $articleContent = $finder->query("//*[contains(@class, '$classname')]");
+
+        if ($articleContent->length == 0) {
+            return null;
+        }
+
+        $articleContentText = strip_tags($articleContent->item(0)->nodeValue);
+
+        $this->getArticleMostUsedWords($articleContentText);
+
+        return $articleContentText;
     }
 
     protected function getNewArticleCategory($dom): ?string {
         $finder = new \DomXPath($dom);
-        $classname="category";
-        $categoryContent = $finder->query("//*[contains(@class, '$classname')]");
+        $classname = 'post_info_container';
+        $categoryBlock = $finder->query("//div[contains(@class, '$classname')]");
 
-        if ($categoryContent->length == 0) {
+        if ($categoryBlock->length == 0) {
             return null;
         }
 
-        return $categoryContent->item(0)->getElementsByTagName('a')->item(0)->nodeValue;
+        $contentElements = $categoryBlock->item(0)->getElementsByTagName('span');
+
+        $categoryContent = $contentElements->item(1)->getElementsByTagName('a');
+
+        $catagories = [];
+
+        for ($i = 0; $i < $categoryContent->length; $i++) {
+            $catagories[] = $categoryContent->item($i)->nodeValue;
+        }
+
+        return implode(',', $catagories);
     }
 
     protected function getNewArticleImage($dom): ?string {
@@ -194,9 +240,8 @@ class GetScrapedArticles extends Command
             return null;
         }
         
-        $imagePath = $imageContent->item(0)->getAttribute('src') ?? null;
-        
-        
+        $imagePath = $imageContent->item(0)->getAttribute('src');
+               
         $ext = pathinfo($imagePath, PATHINFO_EXTENSION);
         $fileName = '10-web-'. time(). '.'.$ext;
         $getImageContent = file_get_contents($imagePath);
@@ -219,6 +264,25 @@ class GetScrapedArticles extends Command
         }
 
         return false;
+    }
+
+    protected function getArticleMostUsedWords(string $content_text): void {
+
+        $words = array_filter(explode(' ', $content_text), function($val){
+            return strtolower(strlen($val)) > 4;
+        });
+
+        foreach ($words as $word) {
+            if ($word == '') {
+                continue;
+            }
+
+            array_key_exists( $word, $this->mostUsedWords ) ? $this->mostUsedWords[ $word ]++ : $this->mostUsedWords[ $word ] = 1;
+
+        }
+
+        arsort($this->mostUsedWords);
+
     }
 
 
