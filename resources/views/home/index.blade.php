@@ -5,7 +5,8 @@
 @section('keywords') {{'10 WEB, test, blog, articles'}} @endsection
 
 @section('styles')
-<script src="{{ asset('css/bootstrap-datepicker.min.css') }}" defer></script>
+<script src="https://unpkg.com/gijgo@1.9.13/js/gijgo.min.js" type="text/javascript"></script>
+<link href="https://unpkg.com/gijgo@1.9.13/css/gijgo.min.css" rel="stylesheet" type="text/css" />
 @endsection
 
 @section('content')
@@ -15,7 +16,7 @@
             <nav class="navbar navbar-light bg-light p-0 mb-3">
               <div class="container-fluid p-0">
                 <form class="d-flex" method="GET" action="{{route('home')}}">
-                    <input type="text" class="form-control mr-2 article-date datepicker" name="article_date" value="{{Request::input("article_date") ?? ''}}" placeholder="Select Date"/>
+                    <input type="text" class="form-control mr-2 article-date datepicker" name="article_date" value="{{Request::input("article_date") ?? ''}}" placeholder="Select Date" autocomplete="off" />
                     <input class="form-control mr-2" type="search" placeholder="Type" aria-label="Search" name="keyword" value="{{Request::input("keyword") ?? ''}}">
                     <button class="btn btn-outline-danger mr-2 reset-button" type="reset">Reset</button>
                     <button class="btn btn-outline-success" type="submit">Search</button>
@@ -50,15 +51,18 @@
 @endsection
 
 @section('footer-scripts')
-    <script src="{{ asset('js/bootstrap-datepicker.min.js') }}" defer></script>
     <script type="application/javascript">
         $(document).ready(function() {
-            $('.datepicker').datepicker({format: 'yyyy-mm-dd'});
+            $('.datepicker').datepicker({
+                format: 'yyyy-mm-dd',
+                showRightIcon: false,
+                uiLibrary: 'bootstrap4'
+            });
 
             $('.reset-button').on('click', function () {
-                debugger;
-                $('.article-date').val('');
-                $(this).closest('form').trigger("reset");
+                $('form input').each(function () {
+                    $(this).removeAttr('value');
+                });
             });
         });
     </script>
