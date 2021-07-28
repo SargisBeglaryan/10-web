@@ -18,7 +18,10 @@ class Article extends Model
         'article_date',
         'scraped_date',
         'excerpt',
-        'image',
+    ];
+
+    protected $casts = [
+        'original_content' => 'array'
     ];
 
     protected $hidden = [

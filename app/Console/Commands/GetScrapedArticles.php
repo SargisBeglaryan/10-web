@@ -20,6 +20,7 @@ class GetScrapedArticles extends Command
     protected $pagesCount = 0;
     protected $addedPostsCount = 0;
     protected $websiteUrl = 'https://10web.io/blog/';
+    protected $out;
     /**
      * The name and signature of the console command.
      *
@@ -42,6 +43,7 @@ class GetScrapedArticles extends Command
     public function __construct()
     {
         parent::__construct();
+        $this->out = new \Symfony\Component\Console\Output\ConsoleOutput();
     }
 
     /**
@@ -67,15 +69,17 @@ class GetScrapedArticles extends Command
 
             $this->addPageBlogPosts($DOM);
 
+            $this->out->writeln("Page 1 scraped...........");
+
             $this->addAllPagesArticles();
 
             $this->addDayMostUsedWord();
 
             DB::commit();
-            echo 'Success';
+            $this->out->writeln('Success');
         } catch (\Exception $ex) {
             DB::rollBack();
-            echo $ex->getMessage();
+            $this->out->writeln($ex->getMessage());
         }
     }
 
@@ -107,6 +111,7 @@ class GetScrapedArticles extends Command
             $DOM = new \DOMDocument('1.0', 'utf-8');
             @$DOM->loadHTML($response->getContents());
             $this->addPageBlogPosts($DOM);
+            $this->out->writeln('Page '. $i . ' scraped...........');
 
         }
     }

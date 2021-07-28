@@ -1,11 +1,12 @@
 ## Web App using steps.
 
-1. composer install, configure .env (database name key generate)
-2. php artisan ui vue --auth (if already exist choose oprtion no)
+1. composer install
+2. configure .env (database name, key generate)
 3. npm install
 4. npm run dev
 5. php artisan storage:link
 6. php artisan migrate
+NOTE. Make sure that articles table original_content column type is json.
 7. php artisan db:seed --class=CreateUsersSeeder 
 8. php artisan db:seed --class=CreateScrapSettingsSeeder
 9. Go to your website - example.com/login and login with cred. 

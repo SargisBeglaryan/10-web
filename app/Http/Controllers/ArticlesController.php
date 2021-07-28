@@ -63,7 +63,7 @@ class ArticlesController extends Controller
      * @param  \App\Models\Article  $article
      * @return \Illuminate\Http\Response
      */
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
         $url = $request->fullUrl();
         
