@@ -11,8 +11,6 @@ const mix = require('laravel-mix');
  |
  */
 
-mix.js('resources/js/app.js', 'public/js')   
-    .js('resources/js/bootstrap-datepicker.min.js', 'public/js')
-    .css('resources/css/bootstrap-datepicker.min.css', 'public/css')
+mix.js('resources/js/app.js', 'public/js')
     .vue()
     .sass('resources/sass/app.scss', 'public/css');
