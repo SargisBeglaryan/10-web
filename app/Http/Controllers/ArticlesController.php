@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use Illuminate\Http\Request;
 use App\Repositories\ArticlesRepository;
+use Illuminate\Support\Facades\Cache;
 
 class ArticlesController extends Controller
 {
@@ -21,8 +22,18 @@ class ArticlesController extends Controller
      */
     public function index(Request $request)
     {
+        $url = $request->fullUrl();
+
+        if (Cache::has($url)) {
+            return Cache::get($url);
+        }
+        
         $articles = $this->articlesService->getArticlesList($request);
-        return view('home')->with(compact('articles'));
+
+        return Cache::rememberForever($url, function () use ($articles) {
+            return view('home.index')->with(compact('articles'))->render();
+        });
+        
     }
 
     /**
@@ -52,9 +63,19 @@ class ArticlesController extends Controller
      * @param  \App\Models\Article  $article
      * @return \Illuminate\Http\Response
      */
-    public function show(Article $article)
+    public function show(int $id)
     {
-        //
+        $url = $request->fullUrl();
+        
+        if (Cache::has($url)) {
+            return Cache::get($url);
+        }
+        
+        $article = $this->articlesService->getArticleById($id);
+
+        return Cache::rememberForever($url, function () use ($article) {
+            return view('home.show')->with(compact('article'))->render();
+        });
     }
 
     /**

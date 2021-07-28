@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 Auth::routes(['register' => false]);
 
 Route::get('/', [App\Http\Controllers\ArticlesController::class, 'index'])->name('home');
+Route::get('/{id}', [App\Http\Controllers\ArticlesController::class, 'show'])->name('article.show');
 
 Route::group(['middleware' => 'auth'], function () {
     Route::resource('/dashboard', App\Http\Controllers\DashboardController::class);

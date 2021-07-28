@@ -10,6 +10,7 @@ use App\Models\MostUsedWord;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class GetScrapedArticles extends Command
 {
@@ -164,6 +165,7 @@ class GetScrapedArticles extends Command
                 $newArticle->updated_at = Carbon::now();
                 $newArticle->save();
 
+                Cache::flush();
                 $this->addedPostsCount = $this->addedPostsCount + 1;
             }
         }
@@ -190,7 +192,9 @@ class GetScrapedArticles extends Command
             return null;
         }
 
-        return $articleContent->item(0)->nodeValue;
+        $parsedHtml = trim(str_replace('"', "'", preg_replace("/[\r\n]+/", "", $dom->saveHTML($articleContent->item(0)))));
+
+        return json_encode(str_replace("\/", "/", str_replace("data-src", "src", $parsedHtml)));
     }
 
     protected function getNewArticleContentText($dom): ?string {

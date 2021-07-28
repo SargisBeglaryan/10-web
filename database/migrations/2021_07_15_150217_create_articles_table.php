@@ -19,7 +19,7 @@ class CreateArticlesTable extends Migration
             $table->string('author')->nullable();
             $table->string('image')->nullable();
             $table->string('excerpt')->nullable();
-            $table->longText('original_content');
+            $table->json('original_content');
             $table->longText('content_text')->nullable();
             $table->date('scraped_date');
             $table->date('article_date');
